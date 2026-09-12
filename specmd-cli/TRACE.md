@@ -1,7 +1,7 @@
 ---
 specmd_trace: "0.4.0"
 traces_file: "SPEC.md"
-traces_spec: "0.11.0"
+traces_spec: "0.13.0"
 status: draft
 name: "specmd Tool Traceability"
 last_updated: "2026-09-12"
@@ -11,7 +11,7 @@ last_updated: "2026-09-12"
 
 ## Purpose
 
-This informative companion maps the Specification Set rooted at `SPEC.md` version `0.11.0` to logical design areas and planned verification evidence.
+This informative companion maps the Specification Set rooted at `SPEC.md` version `0.13.0` to logical design areas and planned verification evidence.
 
 The normative specification remains authoritative. This document does not add, remove, or reinterpret required behavior.
 
@@ -57,7 +57,7 @@ Verification methods use:
 | VAL-009 | Result presentation | I, T | Structural-pass disclaimer fixture | TBD |
 | VAL-010, VAL-011 | Module index parser and safe path resolver | T, A | Valid, cyclic, missing, duplicate, and escaping-path fixtures | src/specmd/module_resolver.py (tests/test_validate.py) |
 | VAL-012, VAL-013 | Automatic profile detector | T | Core-only auto-detection and no-warning fixture | src/specmd/structural.py (tests/test_validate.py) |
-| VAL-014, VAL-017 | Optional resolver and feature-rule registry | T, I | Supported and unknown Optional feature fixtures | src/specmd/structural.py, src/specmd/core_profile.py (tests/test_validate.py) — VAL-017's "unrecognized feature" is reported as informational, not a defect, per Optional 0.4.2 §44's confirmed open feature set |
+| VAL-014, VAL-017 | Optional resolver and feature-rule registry | T, I | Supported and unknown Optional feature fixtures | src/specmd/structural.py, src/specmd/core_profile.py (tests/test_validate.py) — VAL-017's "unrecognized feature" is reported as informational, not a defect, per Optional §44's confirmed open feature set (checked against both 0.4.2 and 0.4.3, unchanged between them) |
 | VAL-015, VAL-016 | Explicit profile evaluator | T | Forced-Core and missing-Optional fixtures | TBD |
 | TRACE-001, TRACE-002 | Trace command-input parser | T | Explicit and default trace-mode fixtures | src/specmd/trace_pair.py (tests/test_validate.py) |
 | TRACE-003, TRACE-004, TRACE-005 | Trace discovery and pair-state resolver | T | Declared, undeclared, present, and missing trace fixtures | TBD |
@@ -73,7 +73,7 @@ Verification methods use:
 | TRACEGEN-009, TRACEGEN-010 | Trace reconciler | T, I | Add, retain, remove, and manual-content preservation fixtures | src/specmd/commands/trace.py (tests/test_trace.py) |
 | TRACEGEN-011, TRACEGEN-012, TRACEGEN-013 | Pair-validation, safe-write, and default-path integration | T | Post-generation pair, failure-integrity, and adjacent-update fixtures | src/specmd/commands/trace.py, src/specmd/trace_pair.py (tests/test_trace.py) |
 | INTG-001, INTG-002, INTG-003, INTG-004, INTG-005 | Tool-neutral and capability-discovery integration | T, I | CLI/JSON parity, discovery, custom-path, and caller-equivalence fixtures | TBD |
-| COG-001, COG-002, COG-003, COG-004, COG-005 | Cognitive mode and result separation | T, I | Host/direct/off mode and result-label fixtures | TBD |
+| COG-001, COG-002, COG-003, COG-004, COG-005 | Cognitive mode and result separation | T, I | Host/direct/off mode and result-label fixtures | src/specmd/host_agent.py, src/specmd/commands/blackbox.py (tests/test_host_agent.py, tests/test_blackbox.py) — Host-Agent Mode branch of COG-001 implemented for `blackbox` (SPECMD_CLI_ICD.md section 7.2); Direct-Provider Mode / PROV-001..009 remain TBD, out of scope |
 | COG-006, COG-007, COG-008, COG-009 | Cognitive authority and failure boundaries | T, A | No-invention, proposal, evidence, and provider-failure fixtures | TBD |
 | AGENT-001, AGENT-002, AGENT-003 | Coding-agent capability and patch boundary | T, I | Operation availability and propose/apply authorization fixtures | TBD |
 | AGENT-004, AGENT-005, AGENT-006, AGENT-007 | Living-spec agent instructions and authority | T, I | Adapter content and conflict fixtures | TBD |
@@ -93,10 +93,11 @@ Verification methods use:
 | ICD-GEN-001, ICD-GEN-002, ICD-GEN-003, ICD-GEN-004, ICD-GEN-005 | CLI grammar and interaction rules | T | Invalid, ignored, stdin, and non-interactive fixtures | TBD |
 | ICD-IN-001, ICD-IN-002, ICD-IN-003, ICD-IN-004, ICD-IN-005, ICD-IN-006 | CLI input and path resolution | T, I | Explicit/default/custom/no-guess and path-display fixtures | src/specmd/resolver.py (tests/test_validate.py) |
 | ICD-OUT-001, ICD-OUT-002, ICD-OUT-003, ICD-OUT-004, ICD-OUT-005, ICD-OUT-006 | CLI output and safe-write behavior | T, A | Authorization, atomicity, failure-state, and read-only fixtures | src/specmd/writer.py (tests/test_init.py, tests/test_render.py) |
-| ICD-COG-001, ICD-COG-002, ICD-COG-003 | CLI cognitive-mode behavior | T | Label, requested/used, and disabled-provider fixtures | src/specmd/cognitive.py (tests/test_inspect.py) |
+| ICD-COG-001, ICD-COG-002, ICD-COG-003 | CLI cognitive-mode behavior | T | Label, requested/used, and disabled-provider fixtures | src/specmd/cognitive.py (tests/test_inspect.py, tests/test_blackbox.py) — blackbox now negotiates `--cognitive` (default `auto`, per ICD §7) instead of hardcoding `off`/`none` |
 | ICD-REV-001, ICD-REV-002, ICD-REV-003 | Reviewer option parser and applicability rules | T | Exact, duplicate, missing-reviewer, and cognitive-off fixtures | TBD |
 | ICD-REV-004, ICD-REV-005, ICD-REV-006, ICD-REV-007, ICD-REV-008 | Reviewer orchestration and policy result mapper | T, I | Authorization, order-independence, policy, and provenance fixtures | TBD |
-| ICD-BBX-001, ICD-BBX-002, ICD-BBX-003, ICD-BBX-004 | Black-box CLI and result contract | T, I | Trace-mode, export, result-dimension, and reviewer-provenance fixtures | TBD |
+| ICD-BBX-001, ICD-BBX-002, ICD-BBX-003, ICD-BBX-004, ICD-BBX-005 | Black-box CLI and result contract | T, I | Trace-mode, export, result-dimension, reviewer-provenance, and cognitive-package fixtures | src/specmd/commands/blackbox.py (tests/test_blackbox.py) — ICD-BBX-001/002/003/005 covered; ICD-BBX-004 (`--reviewer` on blackbox) remains TBD, out of scope of this change |
+| ICD-HOSTIN-001, ICD-HOSTIN-002, ICD-HOSTIN-003, ICD-HOSTIN-004, ICD-HOSTIN-005 | Host-Agent cognitive input contract | T, I | Cognitive-off conflict, malformed-payload, citation-rejection, used-value, and coverage fixtures | src/specmd/host_agent.py, src/specmd/commands/blackbox.py, src/specmd/cli.py, src/specmd/mcp_server.py (tests/test_host_agent.py, tests/test_blackbox.py, tests/test_mcp_server.py) |
 | ICD-CUKE-001, ICD-CUKE-002, ICD-CUKE-003, ICD-CUKE-004, ICD-CUKE-005 | Cucumber CLI routing and execution boundary | T, A | Exact target, export, no-execution, explicit-run, and trusted-config fixtures | TBD |
 | ICD-CUKE-006, ICD-CUKE-007, ICD-CUKE-008, ICD-CUKE-009, ICD-CUKE-010 | Cucumber status, import, disclosure, and process controls | T, I | Exit, trace-update, JSON, disclosure, timeout, and cancellation fixtures | TBD |
 | ICD-SRC-001, ICD-SRC-002, ICD-SRC-003, ICD-SRC-004, ICD-SRC-005, ICD-SRC-006, ICD-SRC-007 | Common standards-source CLI options | T, I | Auto, repository, local, explicit-file, offline, conflict, and provenance fixtures | TBD |
@@ -111,14 +112,15 @@ Verification methods use:
 | INSP-002, INSP-003, INSP-004 | Quality analyzers | T, A | Quality-dimension corpus and heuristic review | TBD |
 | INSP-005, INSP-006, INSP-007 | Measurement and Core classifier | T | Core/non-Core size-boundary fixtures | src/specmd/structural.py, src/specmd/commands/inspect.py (tests/test_inspect.py) |
 | INSP-008 | Optional probabilistic analyzer boundary | T, I | Analyzer-present and analyzer-absent fixtures | src/specmd/cognitive.py, src/specmd/commands/inspect.py (tests/test_inspect.py) |
-| REND-001, REND-002, REND-003 | Rendering pipeline and context filter | T, I | Golden render and human-only exclusion fixtures | src/specmd/commands/render.py, src/specmd/human_only.py (tests/test_render.py) |
+| REND-001, REND-002, REND-003 | Rendering pipeline and context filter | T, I | Golden render and human-only exclusion fixtures | src/specmd/commands/render.py, src/specmd/human_only.py (tests/test_render.py) — headings, tables, links, code blocks, bulleted/numbered lists, and blockquotes all convert to real HTML elements (not just wrapped as `<p>`) |
 | REND-004, REND-005 | HTML and PDF renderers | T, D | Format generation and visual inspection | src/specmd/commands/render.py (tests/test_render.py; PDF explicitly unavailable, exit 4) |
 | REND-006, REND-007 | Specification Set assembler and provenance header | T, I | Modular render with version identification | TBD |
 | REND-008 | Self-contained asset policy | T, I | Offline rendered-output inspection | TBD |
+| REND-009 | Human-only editorial-rendering labeler | T | Labeled/styled-wrapper and raw-delimiter-absence fixtures | src/specmd/commands/render.py (tests/test_render.py) — added retroactively: the implementation (red-bordered, labeled `<div>`) predates this requirement ID, which formalizes ICD-CLI 8.4's existing "clearly labeled" text |
 | TEST-001, TEST-002, TEST-003 | Verification coverage analyzer | T | Covered, uncovered, and orphan acceptance fixtures | src/specmd/commands/coverage.py (tests/test_coverage_command.py) |
 | TEST-004 | Tool-neutral test-plan exporter | T, I | Export schema and content fixture | src/specmd/commands/coverage.py (tests/test_coverage_command.py) |
 | TEST-005, TEST-006, TEST-007 | Implementation-test boundary | T, A | Non-execution, explicit-integration, and claim-label fixtures | src/specmd/commands/coverage.py (tests/test_coverage_command.py) |
-| BBX-001, BBX-002, BBX-003, BBX-004, BBX-005 | Black-box contract analyzer | T, A | Interface inventory, gap, ambiguity, and evidence-label corpus | TBD |
+| BBX-001, BBX-002, BBX-003, BBX-004, BBX-005 | Black-box contract analyzer | T, A | Interface inventory, gap, ambiguity, and evidence-label corpus | src/specmd/commands/blackbox.py, src/specmd/host_agent.py (tests/test_blackbox.py, tests/test_host_agent.py) — BBX-002 also covers the named interface-element inventory (heading-based, under `interface_elements`); BBX-002/003 covered deterministically by interface-section inventory and the actor<->operation cross-reference (`evidence_type=deterministic`; only recognizes the bold-labeled-bullet convention and reports at `information` severity, since text matching alone cannot tell an actor from a same-convention data entity — verified, and an earlier unbolded-bullet variant's false positives fixed, against SPECmd-app/spec-md-examples's internal-it-ticketing-system at commit 5751f95); BBX-004/005's interface I/O facilitation drafting and requirements<->interface cross-mapping checks are reachable via Host-Agent Mode (`--cognitive-input`) — verified end-to-end against this project's own SPEC.md and against the ticketing example, including a deliberately hallucinated requirement-ID citation being dropped and reported rather than trusted; without `--cognitive-input` they report themselves as not yet performed and include a `cognitive_package` rather than fabricating a result |
 | BBX-006, BBX-007, BBX-008, BBX-009, BBX-010 | Trace-aware black-box correlator | T, I | Trace present, absent, conflicting, and four-dimension result fixtures | src/specmd/commands/blackbox.py, src/specmd/trace_pair.py (tests/test_blackbox.py) — BBX-007 correlation is at requirement-ID granularity, not per-interface-element |
 | BBX-011, BBX-012 | Black-box exporter and execution boundary | T, I | Tool-neutral export and no-runtime-execution fixtures | src/specmd/commands/blackbox.py (tests/test_blackbox.py) |
 | ADAPT-001 | Adapter registry and generator | T | Supported-target generation fixtures | src/specmd/commands/adapt.py (tests/test_adapt.py) |
@@ -133,7 +135,7 @@ Verification methods use:
 | REL-002 | Safe output writer | T, A | Failure-injection and atomicity fixture | TBD |
 | REL-003 | Finding sorter | T | Deterministic-order snapshot | TBD |
 | REL-004 | Generation result reporter | T | Partial-output failure fixture | TBD |
-| PORT-001, PORT-002, PORT-003 | Core compatibility layer | T, I | Multi-version compatibility suite | TBD |
+| PORT-001, PORT-002, PORT-003 | Core compatibility layer | T, I | Multi-version compatibility suite | src/specmd/core_profile.py (SUPPORTED_CORE_VERSIONS/SUPPORTED_OPTIONAL_VERSIONS), src/specmd/structural.py (tests/test_validate.py, tests/test_standards.py) — Core/Optional 0.4.2 and 0.4.3 both fully supported; 0.4.3 verified by direct diff against 0.4.2 as a pure editorial PATCH before being added, never silently substituted for an older declared version |
 | PORT-004 | Independent artifact versioning | I, T | Schema, adapter, and rule-version checks | TBD |
 | PORT-005 | Platform abstraction | T | Normalized cross-platform result comparison | TBD |
 | PORT-006, PORT-007, PORT-008 | Version Alignment Process — exact-version resolver and indeterminate/remediation reporter | T, I | Non-substitution, indeterminate-on-unresolved, and first-suggested-remediation fixtures | src/specmd/structural.py (version_unresolved, version_alignment_finding), applied in commands/validate.py, commands/inspect.py, commands/trace.py (tests/test_validate.py, tests/test_inspect.py, tests/test_trace.py) |
@@ -192,6 +194,7 @@ Verification methods use:
 | ACC-034 | CLI-002, CLI-003, CLI-012, CLI-013, TRACE-006, TRACEGEN-003 | Custom Root Specification filename, exact trace binding, and no-guess discovery test | Planned |
 | ACC-035 | BBX-001, BBX-002, BBX-003, BBX-004, BBX-005, BBX-006, BBX-007, BBX-008, BBX-009, BBX-010, BBX-011, BBX-012 | Black-box contract inventory, trace-awareness, authority, export, and non-execution test | Planned |
 | ACC-036 | PORT-006, PORT-007, PORT-008 | Non-substitution, indeterminate-result, and first-suggested-remediation test | Planned |
+| ACC-037 | REND-009 | Labeled human-only editorial-rendering test | Planned |
 | IACC-001 | INTG-001, INTG-002, INTG-004, INTG-005 | Human/agent JSON equivalence test | Planned |
 | IACC-002 | COG-002, COG-003, COG-004, COG-005 | Deterministic-only limitation and separation test | Planned |
 | IACC-003 | COG-006, COG-007, COG-008 | Proposal, inference, and evidence-truthfulness test | Planned |
@@ -264,7 +267,7 @@ Verification methods use:
 4. Adapter installation-path evidence depends on resolution of Open Issue 3.
 5. Direct-Provider implementation evidence depends on resolution of Open Issue 4.
 6. Stable rule-catalog evidence depends on resolution of Open Issue 5.
-7. `FLW-001` and `FLW-002` (Behavioral Flow headings, section 3.3) are currently untraced, making `specmd validate --trace auto` report this pair as `misaligned`. This is a genuine, currently-open classification question, not an extraction bug: the implementation's requirement-ID extractor (`src/specmd/ids.py`) recognizes any `#### PREFIX-NNN — Title` heading as a candidate requirement/invariant identifier, and Behavioral Flow headings share that shape without necessarily being RFC2119 requirements themselves (they are process illustrations referencing requirements defined elsewhere). No authoritative Core 0.4.2 text was available to this project to settle whether Behavioral Flow IDs fall under TRACE-007's "every current normative requirement ID and invariant ID." Decide per document rather than hardcoding a rule; for this Root Specification, resolve by either (a) explicitly mapping FLW-001/002 in the matrix below once their trace-worthiness is confirmed, or (b) recording here that they are out of TRACE-007's scope, with rationale.
+7. **Resolved.** `FLW-001` and `FLW-002` (Behavioral Flow headings, section 3.3) are explicitly out of `TRACE-007`'s scope, not merely untraced. When first found, this was an open classification question, settled by evidence from Core 0.4.2 §5 "System Model" (lists "behavioral flows" as distinct from §6 "Requirements," whose own example prefixes — `FUN`/`DATA`/`AUTH`/`SEC`/`INT` — are never flow-shaped) and Optional 0.4.2 Appendix C's example trace chain (treats "Flow" as its own layer, not folded into requirement-ID trace coverage). Subsequently, Core/Optional 0.4.3 confirmed this reading explicitly and in writing — new text added specifically for this: *"An ID alone does not make an element normative... TRACE coverage follows normative obligations, not every label in the document"* (Core 0.4.3), and *"Behavioral flows and other identified specification elements MAY be traced when useful, but their IDs do not automatically require TRACE coverage"* (Optional 0.4.3). `src/specmd/ids.py`'s `extract_requirement_ids` excludes any `FLW-`-prefixed identifier explicitly (`core_profile.FLOW_ID_PREFIXES`), and `extract_flow_ids` surfaces them separately so nothing is silently dropped. The pair validates `aligned`.
 
 ## Maintenance Rules
 
