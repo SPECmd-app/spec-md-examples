@@ -1,9 +1,9 @@
 ---
-specmd: "0.4.1"
-spec_version: "0.1.0"
+specmd: "0.4.3"
+spec_version: "0.1.1"
 status: draft
 name: "Internal IT Ticketing System"
-last_updated: "2026-09-11"
+last_updated: "2026-09-13"
 ---
 
 # SPEC.md — Internal IT Ticketing System
@@ -131,6 +131,10 @@ last_updated: "2026-09-11"
 ## 8. Notes and Rationale
 
 This is a starting SPEC.md, deliberately minimal per SPEC.md Core §13 (Living Specification). It captures the four decisions made so far — service-desk type, SSO scope, single-organization tenancy, and intake channels — and leaves everything else open rather than inventing product behavior. Expect this document to grow section-by-section as ticket lifecycle, roles/permissions, SLAs, notifications, attachment handling, data retention, and Requester authentication are decided; each such decision should update this SPEC.md in the same change that implements it.
+
+### Version 0.1.1 Clarification
+
+This revision updates the document to SPEC.md Core 0.4.3 (from 0.4.1). Core 0.4.2 and 0.4.3 were both clarification-only PATCH releases — none of their changes (the design-vs-invention boundary, non-goal wording, and stable-ID/TRACE-coverage clarifications) affect this document's required behavior, since it uses no `TRACE.md` or behavioral-flow identifiers. This is therefore a PATCH-level change.
 
 ## Open Issues (must be resolved or explicitly deferred before related implementation)
 
