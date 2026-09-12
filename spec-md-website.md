@@ -1,6 +1,6 @@
 ---
 specmd: "0.4.2"
-spec_version: "0.4.0"
+spec_version: "0.4.1"
 status: draft
 name: "SPEC.md Website"
 last_updated: "2026-09-12"
@@ -81,7 +81,9 @@ Given the Current and Previous version cards are rendered together, when their d
 
 ## 8. Notes and Rationale
 
-An earlier draft of this specification (`spec_version` 0.3.0) described a standalone, private companion repository (`xonix999/spec-md-website`) that duplicated Core, Optional, worked examples, and integrations so it had no outside dependency. That repository was created but subsequent site development (the `docs/` publishing-source split, the logo change, the Tooling section, and this version's other changes) happened only on the public `SPECmd-app/SPEC.md` repository. `xonix999/spec-md-website` was not kept in sync and no longer reflects the live site; this revision re-anchors the specification on the site that is actually published, and treats the private repository as an unmaintained fork rather than the system of record.
+An earlier draft of this specification (`spec_version` 0.3.0) described a standalone, private companion repository (`xonix999/spec-md-website`) that duplicated Core, Optional, worked examples, and integrations so it had no outside dependency. At `spec_version` 0.4.0, site development (the `docs/` publishing-source split, the logo change, the Tooling section) had continued only on the public `SPECmd-app/SPEC.md` repository, and the private repository had fallen out of sync.
+
+It has since been brought back up to date — logo, Tooling section (including the Blackbox & test card), the button-alignment fix, and the em-dash cleanup are all mirrored across — so it once again matches the live site's content. Its own GitHub Pages instance still cannot be published under the account's current plan (see §6), which is unrelated to whether its content is current. `SPECmd-app/SPEC.md` remains this specification's system of record regardless of the private repository's sync state.
 
 Splitting worked examples and agent-integration files out of the Jekyll-built `docs/` directory keeps the Site Source small while letting GitHub itself serve those files' rendered/raw views, at the cost of losing a Pages-rendered HTML view for them (they render via GitHub's own blob/raw viewer instead).
 
