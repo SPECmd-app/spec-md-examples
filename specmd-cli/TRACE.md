@@ -1,6 +1,6 @@
 ---
 specmd_trace: "0.4.0"
-traces_file: "specmd-cli.md"
+traces_file: "SPEC.md"
 traces_spec: "0.11.0"
 status: draft
 name: "specmd Tool Traceability"
@@ -11,7 +11,7 @@ last_updated: "2026-09-12"
 
 ## Purpose
 
-This informative companion maps the Specification Set rooted at `specmd-cli.md` version `0.11.0` to logical design areas and planned verification evidence.
+This informative companion maps the Specification Set rooted at `SPEC.md` version `0.11.0` to logical design areas and planned verification evidence.
 
 The normative specification remains authoritative. This document does not add, remove, or reinterpret required behavior.
 
@@ -272,4 +272,4 @@ Verification methods use:
 - Keep requirement IDs aligned with the normative specification; do not reassign removed IDs.
 - Replace `TBD` cells with precise source references when implementation begins.
 - Replace or supplement planned evidence with immutable evidence references where practical after verification runs.
-- Resolve any conflict in favor of `specmd-cli.md`.
+- Resolve any conflict in favor of `SPEC.md`.
