@@ -1,17 +1,17 @@
 ---
 specmd_trace: "0.4.0"
 traces_file: "SPEC.md"
-traces_spec: "0.5.0"
+traces_spec: "0.6.1"
 status: draft
 name: "SPEC.md Website Traceability"
-last_updated: "2026-09-19"
+last_updated: "2026-09-20"
 ---
 
 # SPEC.md Website — TRACE.md
 
 ## Purpose
 
-This informative companion maps the requirements of `SPEC.md` version `0.5.0` to the parts of the site that implement them and to verification evidence.
+This informative companion maps the requirements of `SPEC.md` version `0.6.1` to the parts of the site that implement them and to verification evidence.
 
 The normative specification remains authoritative. This document does not add, remove, or reinterpret required behavior.
 
@@ -38,6 +38,8 @@ Verification methods use:
 | FUN-003 | Machine-readable index | I | `docs/llms.txt` | TBD |
 | FUN-004 | Crawler policy | I | `docs/robots.txt` | TBD |
 | FUN-005 | Structured data | I | `docs/index.html` (JSON-LD block) | TBD |
+| FUN-007 | Portables page, nav link | D, I | `docs/portables.html`, `docs/index.html` (nav, hero button) | Local preview 2026-09-20: page lists Judo Club first then three others, stacked vertically; nav link is last after Versions and opens in a new tab; each card shows a "Spec" badge row (Core, plus Optional for specmd CLI); Judo Club section on the homepage points to the Portables page; homepage has no cards. Live-site check: TBD |
+| FUN-008 | Machine-readable index | I | `docs/llms.txt` (Portables) | TBD |
 | FUN-006, DATA-001 | Tooling section, link integrity | I | `docs/index.html` (#tooling) | TBD |
 | UX-001 | Version card layout | D | `docs/index.html` (card CSS) | TBD |
 | DATA-002 | Release procedure | I | `CHANGELOG.md`, `docs/index.html`, `docs/llms.txt`, `integrations/` | TBD |
@@ -61,6 +63,9 @@ Verification methods use:
 | New Core release updates Current/Previous | DATA-001, DATA-002, FUN-002 | TBD |
 | `llms.txt` / `robots.txt` reachable and reference existing files | FUN-003, FUN-004, INT-001 | TBD |
 | Version cards' buttons align | UX-001 | TBD |
+| Portables reachable from nav (new tab), Judo Club listed first as canonical example | FUN-007 | Local preview only, 2026-09-20 |
+| Each portable shows the Core (and Optional) version it targets; homepage Judo Club section points to Portables | FUN-007 | Local preview only, 2026-09-20 |
+| New portable appears on the Portables page and in `llms.txt`, links resolve | FUN-007, FUN-008, DATA-001 | TBD |
 
 ## Known Gaps
 
