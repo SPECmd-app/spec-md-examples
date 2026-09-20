@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<bpmn:definitions
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_StarterKit"
+  targetNamespace="https://headless-bpm.example/bpmn">
+
+  <bpmn:process id="Process_StarterKitRequest" name="Starter Kit Request" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Request" name="Request received">
+      <bpmn:outgoing>Flow_Start_Review</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="UserTask_ReviewLead" name="Review prospect">
+      <bpmn:incoming>Flow_Start_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Fulfil</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:serviceTask id="ServiceTask_FulfilKit" name="Fulfil starter kit">
+      <bpmn:incoming>Flow_Review_Fulfil</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fulfil_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_Completed" name="Completed">
+      <bpmn:incoming>Flow_Fulfil_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Request" targetRef="UserTask_ReviewLead" />
+    <bpmn:sequenceFlow id="Flow_Review_Fulfil" sourceRef="UserTask_ReviewLead" targetRef="ServiceTask_FulfilKit" />
+    <bpmn:sequenceFlow id="Flow_Fulfil_End" sourceRef="ServiceTask_FulfilKit" targetRef="EndEvent_Completed" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_StarterKit">
+    <bpmndi:BPMNPlane id="BPMNPlane_StarterKit" bpmnElement="Process_StarterKitRequest">
+      <bpmndi:BPMNShape id="Shape_Start" bpmnElement="StartEvent_Request">
+        <dc:Bounds x="120" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Review" bpmnElement="UserTask_ReviewLead">
+        <dc:Bounds x="220" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Fulfil" bpmnElement="ServiceTask_FulfilKit">
+        <dc:Bounds x="410" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End" bpmnElement="EndEvent_Completed">
+        <dc:Bounds x="600" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Start_Review" bpmnElement="Flow_Start_Review">
+        <di:waypoint x="156" y="140" />
+        <di:waypoint x="220" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Review_Fulfil" bpmnElement="Flow_Review_Fulfil">
+        <di:waypoint x="340" y="140" />
+        <di:waypoint x="410" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Fulfil_End" bpmnElement="Flow_Fulfil_End">
+        <di:waypoint x="530" y="140" />
+        <di:waypoint x="600" y="140" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
