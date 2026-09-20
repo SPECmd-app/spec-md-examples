@@ -6,6 +6,8 @@ name: "Internal IT Ticketing System"
 last_updated: "2026-09-13"
 ---
 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # SPEC.md — Internal IT Ticketing System
 
 ## Specification Contract

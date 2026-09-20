@@ -14,6 +14,8 @@ optional_features:
   trace: true
 ---
 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # specmd Tool Specification
 
 ## Specification Contract

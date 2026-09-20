@@ -7,6 +7,8 @@ name: "specmd Tool Traceability"
 last_updated: "2026-09-12"
 ---
 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # specmd Tool — TRACE.md
 
 ## Purpose

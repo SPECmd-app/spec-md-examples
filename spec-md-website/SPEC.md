@@ -6,6 +6,8 @@ name: "SPEC.md Website"
 last_updated: "2026-09-20"
 ---
 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # SPEC.md Website Specification
 
 ## Specification Contract
