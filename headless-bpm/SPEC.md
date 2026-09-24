@@ -1,18 +1,16 @@
 ---
 specmd: "0.4.3"
 specmd_optional: "0.4.3"
-spec_version: "0.14.0"
+spec_version: "0.18.0"
 status: draft
 name: "Headless BPM"
-last_updated: "2026-09-20"
+last_updated: "2026-09-24"
 optional_features:
   requirement_metadata: true
   diagrams: mermaid
   composed_verification: true
   trace: true
 ---
-
-<!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # Headless BPM Specification
 
@@ -203,9 +201,9 @@ Headless BPM reserves BPMN-defined terminology for BPMN-defined meanings. In par
 
 **Actor Credential** — inbound credential by which a Process Actor authenticates to process-scoped Headless BPM APIs. It MUST NOT imply platform-management authority.
 
-**Process Access Profile** — reusable actor-facing capability policy that explicitly allowlists REST Operation IDs and/or MCP Tool IDs and narrows them by Entry Point, process, version, execution, node, task, event, notification, or equivalent process-resource scope.
+**Process Access Profile** — reusable actor-facing capability policy that explicitly allowlists REST Operation IDs and/or MCP Tool IDs and narrows them by Entry Point, process, version, execution, node, task, message, notification, or equivalent process-resource scope.
 
-**REST Operation ID** — stable logical identifier for one actor-facing REST operation independent of deployment URL, for example `task.get`, `task.claim`, or `event.publish`.
+**REST Operation ID** — stable logical identifier for one actor-facing REST operation independent of deployment URL, for example `task.get`, `task.claim`, or `message.publish`.
 
 **MCP Tool ID** — stable logical identifier for one actor-facing MCP tool independent of server implementation or alias.
 
@@ -247,9 +245,9 @@ Headless BPM reserves BPMN-defined terminology for BPMN-defined meanings. In par
 
 **Timer Subscription** — durable wait registration that becomes satisfied at one specified instant.
 
-**Event Subscription** — durable wait registration for an event name plus correlation key.
+**Message Subscription** — durable wait registration, opened by a `MESSAGE` Intermediate Catch Event, for a message name plus correlation key. This is a Headless BPM extension term for the durable persistence record; the catching Flow Node itself remains a BPMN Intermediate Catch Event (see BPMN-001, EVT-002).
 
-**Inbound Event** — externally supplied event submitted to Headless BPM for correlation to an open Event Subscription.
+**Inbound Message** — externally supplied message submitted to Headless BPM for correlation to an open Message Subscription. This is a Headless BPM extension term distinct from BPMN's Event Flow Node category (Start Event, End Event, Intermediate Catch Event) and from Execution Event/Audit Event (immutable history-log records); an Inbound Message is trigger data, not a Flow Node and not a history record.
 
 **Incident** — durable record that an execution is blocked or degraded by a condition requiring automatic or authorized resolution.
 
@@ -372,7 +370,7 @@ A Flow Node Instance has logical states `active`, `waiting`, `completed`, `faile
 - Start Event, Exclusive Gateway, diverging Parallel Gateway, and End Event SHOULD normally complete without external work.
 - A converging Parallel Gateway MAY wait until its synchronization condition is satisfied.
 - User Task and Service Task Flow Nodes wait on their Task Instance.
-- Intermediate Catch Events wait on their configured Timer/Event Subscription or declared condition.
+- Intermediate Catch Events wait on their configured Timer Subscription/Message Subscription or declared condition.
 - Call Activities wait on the separate child Process Instance unless a future specification explicitly defines asynchronous call semantics.
 
 ### 3.7 Task Instance Lifecycle
@@ -449,11 +447,11 @@ Call Activities receive mapped input as a separate child Process root context an
 
 ### 3.11 Intermediate Catch Event and Correlation Model
 
-A `TIMER` Intermediate Catch Event persists a due instant and fires at most once. A `MESSAGE` Intermediate Catch Event opens a durable subscription identified by message/event name and correlation key. A `CONDITIONAL` Intermediate Catch Event declares which context values may satisfy its condition.
+A `TIMER` Intermediate Catch Event persists a due instant and fires at most once. A `MESSAGE` Intermediate Catch Event opens a durable subscription identified by message name and correlation key. A `CONDITIONAL` Intermediate Catch Event declares which context values may satisfy its condition.
 
-Inbound external events/messages are correlated by declared event/message name plus correlation key. If an external message ID is supplied, duplicate submission of the same message ID within its retention period MUST NOT consume more than one subscription.
+Inbound external messages are correlated by declared message name plus correlation key. If an external message ID is supplied, duplicate submission of the same message ID within its retention period MUST NOT consume more than one subscription.
 
-Default message-correlation mode is **single-consumer**: one inbound message/event consumes at most one open subscription. A future version may add BPMN Signal/broadcast semantics.
+Default message-correlation mode is **single-consumer**: one Inbound Message consumes at most one open subscription. A future version may add BPMN Signal/broadcast semantics.
 
 A Process may configure unmatched-message behavior as:
 
@@ -481,7 +479,7 @@ Execution history and audit history are distinct logical records even if stored 
 
 Execution Events MUST be ordered per Process Instance and SHOULD include Flow Node activation/completion, Sequence Flow traversal, task state changes, attempts, variable publication, timer fire, event correlation, incident lifecycle, child process lifecycle, and cancellation.
 
-Audit Events MUST capture protected administrative/user actions such as publication, identity changes, claims, completions, failures, reassignment, event publication, incident resolution, cancellation, and notification acknowledgement.
+Audit Events MUST capture protected administrative/user actions such as publication, identity changes, claims, completions, failures, reassignment, message publication, incident resolution, cancellation, and notification acknowledgement.
 
 ### 3.14 Invariants
 
@@ -506,8 +504,8 @@ A User Task MUST require an authorized Human Actor; a Service Task MUST require 
 ### INV-007 — Attempt numbering
 For one Service Task Instance, `attempt_no` MUST be unique and strictly increase for each new attempt.
 
-### INV-008 — Single event consumption
-One Event Subscription MUST be consumed at most once, and one inbound event in single-consumer mode MUST satisfy at most one Event Subscription.
+### INV-008 — Single message consumption
+One Message Subscription MUST be consumed at most once, and one Inbound Message in single-consumer mode MUST satisfy at most one Message Subscription.
 
 ### INV-009 — Atomic output publication
 A node's declared successful output mappings MUST be published atomically or not published at all.
@@ -669,7 +667,7 @@ Headless BPM MUST provide no built-in GUI, visual process designer, dashboard, f
 Headless BPM MUST expose runtime system information sufficient to identify the running implementation version, supported public API version or versions, declared Headless BPM SPEC compatibility version, and a build identifier when the implementation provides one. System information MUST describe the running software and MUST NOT be inferred only from static documentation metadata.
 
 ### SYS-003 — Liveness and readiness
-The service MUST expose distinct liveness and readiness checks. Liveness MUST indicate whether the service process is responsive. Readiness MUST indicate whether the service can accept normal Headless BPM requests using its required persistence and runtime dependencies. These checks MUST be read-only, MUST return machine-detectable success/failure status, and SHOULD expose only minimal non-sensitive detail suitable for orchestration and load-balancing systems.
+The service MUST expose distinct liveness and readiness checks. Liveness MUST indicate whether the service process is responsive. Readiness MUST indicate whether the service can accept normal Headless BPM requests using its required persistence and runtime dependencies. These checks MUST be read-only, MUST return machine-detectable success/failure status, and SHOULD expose only minimal non-sensitive detail suitable for orchestration and load-balancing systems. When a readiness or liveness check fails, the implementation MUST record the underlying failure detail (for example the specific connectivity or dependency error) to a server-side, operator-only channel such as application logs, distinct from the check's own minimal public response, so an operator can diagnose the cause without that detail ever being exposed through the check's own interface.
 
 ### SYS-004 — Detailed system status
 An authorized operator MUST be able to inspect a detailed system status whose overall state is at least `HEALTHY`, `DEGRADED`, or `UNAVAILABLE` (or stable equivalents) and which includes observation time plus status of required runtime components such as authoritative persistence and execution services. Uptime/start time MAY be included. Detailed status MUST NOT expose secrets, credentials, or protected configuration values.
@@ -780,7 +778,7 @@ A Human Actor assigned to an email-notified User Task MUST have a resolvable del
 A Non-Human Actor MAY authenticate to Headless BPM using an Actor Credential that grants only process-scoped capabilities required for assigned work. Such a credential MUST NOT grant platform-management capabilities merely because the same external system also has a Platform Principal.
 
 ### PART-010 — Process-scoped authorization
-Actor authorization MUST support action plus process-resource scope. At minimum, an Actor Credential MUST be restrictable by Entry Point, Process/Version, Flow Node Definition, Task Instance, event scope, Organization Unit scope when organizations are enabled, or an implementation-independent equivalent selector.
+Actor authorization MUST support action plus process-resource scope. At minimum, an Actor Credential MUST be restrictable by Entry Point, Process/Version, Flow Node Definition, Task Instance, message scope, Organization Unit scope when organizations are enabled, or an implementation-independent equivalent selector.
 
 ### PART-011 — Task-derived actor authority
 For task operations, effective actor authority MUST be the intersection of credential grants and the actor's current task relationship (for example Potential Owner, assignee, or executor). A credential with `task.complete` MUST NOT complete an unrelated task merely because the action name matches.
@@ -824,8 +822,10 @@ REST Operation IDs and MCP Tool IDs MUST map to the same stable logical action v
 ### PAC-005 — Resource scope intersection
 Effective Actor access MUST be the intersection of: actor lifecycle/availability policy; authenticated Actor Credential; Actor Grants; applicable Process Access Profiles; current Organization Unit membership when an organization selector is used; task/assignment relationship where required; requested operation; and requested process-resource scope. A broader profile or organization membership MUST NOT expand a narrower credential or assignment scope.
 
+An applicable Process Access Profile is itself a source of allowed operations, not merely a filter over Actor Grants: when at least one ACTIVE Process Access Profile is associated with the Actor or its Actor Credential, a requested REST Operation ID or MCP Tool ID MUST appear in at least one associated profile's rule for that interface, or the request MUST be denied, regardless of any Actor Grant that would otherwise allow it. An operation permitted by an associated profile MAY be authorized without a corresponding explicit Actor Grant. When no Process Access Profile is associated with the Actor or Actor Credential, authorization is governed by PART-010/PART-011 and applicable Actor Grants alone. A Process Access Profile that lists no REST Operation IDs or MCP Tool IDs for the requested interface MUST deny that interface entirely; an empty or interface-less profile MUST NOT be treated as unrestricted, default, or fall-back access.
+
 ### PAC-006 — Actor-safe operation catalog
-The system MUST expose a discoverable actor-safe operation catalog containing only process-participation functions. At minimum it MUST be possible to independently authorize: `entry_point.start`, `execution.read`, `context.read`, `task.list`, `task.read`, `task.claim`, `task.release`, `task.complete`, `task.fail`, `form.read`, `form.submit`, `event.publish`, `notification.list`, `notification.read`, `notification.acknowledge`, and, when organization support is enabled and explicitly granted, `organization.membership.read` and `task.team.list`.
+The system MUST expose a discoverable actor-safe operation catalog containing only process-participation functions. At minimum it MUST be possible to independently authorize: `entry_point.start`, `execution.read`, `context.read`, `task.list`, `task.read`, `task.claim`, `task.release`, `task.complete`, `task.fail`, `form.read`, `form.submit`, `message.publish`, `notification.list`, `notification.read`, `notification.acknowledge`, and, when organization support is enabled and explicitly granted, `organization.membership.read` and `task.team.list`.
 
 ### PAC-007 — Platform operations excluded by default
 Process Access Profiles MUST NOT include platform-administration operations such as process create/update/publish, Entry Point create/update/enable/disable, identity administration, API-key administration, actor-source administration, authorization administration, integration-secret administration, or unrestricted audit access unless the request is authenticated to a Principal backed by a Platform Principal and is authorized under platform policy.
@@ -863,11 +863,16 @@ An Assignment Policy MAY target an Organization Unit. The policy MUST explicitly
 ### ORG-008 — Organization-aware authorization
 Actor Grants and Process Access Rules MAY include an Organization Unit selector. When present, authorization MUST require current matching membership and MUST explicitly distinguish `SELF_ONLY` from `SELF_AND_DESCENDANTS`; organization scope is an additional narrowing condition and MUST NOT broaden other authorization dimensions.
 
+A Task Instance's Organization Unit scope, for the purpose of this narrowing condition, is derived from the Organization Unit selectors declared in its User Task Potential Owner/Assignee or Service Task executor assignment rule; if none is declared, it MAY instead be derived from the current assignee's or a Potential Owner's active Organization Unit membership. This derivation is diagnostic scoping only and MUST NOT itself grant or imply Potential Owner/assignee eligibility, which remains governed exclusively by ORG-007 and PART-011.
+
 ### ORG-009 — Membership-change effect and history
 Organization hierarchy or membership changes MUST affect subsequent organization-derived assignment and authorization decisions. Such changes MUST NOT rewrite prior Task Assignments, completion attribution, Execution Events, or Audit Events.
 
 ### ORG-010 — Organization is not tenancy or platform authority
 Organization Unit hierarchy and membership MUST NOT by themselves establish tenant data isolation, create Platform Principal permissions, or grant access to unrelated process resources. Any tenant isolation, if later introduced, MUST be specified independently.
+
+### ORG-011 — Optional Process-Organization association
+A deployment MAY associate a Process with one or more Organization Units for classification, discovery, and reporting purposes, independent of any Process Actor's own Organization Unit membership and independent of BPMN Lane/Pool modeling metadata (see Lane, INV-021). A Process-Organization association MUST NOT itself grant or narrow task assignment eligibility, authorization, or platform permissions (see ORG-010, INV-013), and its absence MUST NOT affect conformance. Where a deployment implements this association, an authorized Platform Principal MUST be able to add, list, and remove a Process's Organization Unit associations, and Process listing and Operations Summary queries MUST support filtering by an associated Organization Unit using the same `SELF_ONLY`/`SELF_AND_DESCENDANTS` scope semantics as ORG-007/ORG-008. Adding, changing, or removing a Process-Organization association MUST NOT alter the Process's BPMN semantics, published Process Versions, or historical Process Instance attribution.
 
 ### 4.2.1 Optional API/MCP/Public Entry Point Consumption Limits
 
@@ -974,7 +979,7 @@ The system MUST support API-key rotation by issuing a new secret under a new or 
 Authorized Principals MUST be able to inspect API-key metadata including credential identifier, owning Platform Principal, status, creation time, expiration time when present, last-used time when available, and effective permission restrictions; the secret itself MUST never be included.
 
 ### AUTH-004 — Permission vocabulary
-Every protected function MUST map to a stable logical permission/action identifier. At minimum the model MUST distinguish platform identity/Actor/Actor Source management, API-key and Actor Credential management, process read/create/update/validate/publish/BPMN-import/BPMN-export/BPMN-analyze/BPMN-render, Entry Point read/create/update/enable/disable/start, Process Instance read/cancel/pause/resume/intervene/activity/operational-status/runtime-diagram, process activity read, operations-summary read, bulk-operation preview/execute/read, system info/status read, user-task read/claim/reassign/complete, service-task read/claim/complete/fail, administrative task action, event publish, incident read/retry/resolve, operational-finding read, notification read/acknowledge, integration administration/use, and audit read.
+Every protected function MUST map to a stable logical permission/action identifier. At minimum the model MUST distinguish platform identity/Actor/Actor Source management, API-key and Actor Credential management, process read/create/update/validate/publish/BPMN-import/BPMN-export/BPMN-analyze/BPMN-render, Entry Point read/create/update/enable/disable/start, Process Instance read/cancel/pause/resume/intervene/activity/operational-status/runtime-diagram, process activity read, operations-summary read, bulk-operation preview/execute/read, system info/status read, user-task read/claim/reassign/complete, service-task read/claim/complete/fail, administrative task action, message publish, incident read/retry/resolve, operational-finding read, notification read/acknowledge, integration administration/use, and audit read.
 
 ### AUTH-005 — Platform grant target
 A Platform Authorization Grant MUST target a Platform Principal or Platform API Key Credential, logical action, and resource selector. A resource selector MUST identify a resource type and MAY narrow the grant to a specific resource identifier or collection/scope selector.
@@ -1000,7 +1005,7 @@ Multiple Platform API keys belonging to the same Platform Principal MAY have dif
 ### 4.3 Process and Publication
 
 ### WF-001 — Mixed Task types
-One Process Version MUST be able to contain both BPMN User Task and Service Task Flow Nodes.
+One Process Version MUST be able to contain both BPMN User Task and Service Task Flow Nodes. A Process Version MAY consist entirely of Service Task Flow Nodes with no User Task, enabling fully autonomous execution that orchestrates only Non-Human Actors (including AI agents) without human intervention; the absence of a User Task in a Process Version MUST NOT be treated as a publication error or an incomplete process.
 
 ### WF-002 — Required Flow Node kinds
 Process Versions MUST support Start Event, End Event, User Task, Service Task, Exclusive Gateway, Parallel Gateway, Intermediate Catch Event, and Call Activity as the required executable BPMN Flow Node subset for this version.
@@ -1014,11 +1019,13 @@ A publishable Process MUST have exactly one logical Start Event in this version.
 ### WF-005 — Exclusive Gateway routing
 A diverging Exclusive Gateway MUST select at most one outgoing Sequence Flow according to published condition evaluation and default-flow semantics. If multiple conditional Sequence Flows could match and the model provides no deterministic evaluation rule that preserves the intended one-of-many semantics, publication MUST be rejected as ambiguous.
 
+A Process Version provides a deterministic evaluation rule when either: (a) the diverging Exclusive Gateway declares an explicit evaluation order over its conditional Sequence Flows, in which case the first Sequence Flow whose condition evaluates true is selected; or (b) the conditional Sequence Flows are provably mutually exclusive by construction (for example, equality tests against the same expression with pairwise-distinct literal values), in which case a conforming implementation MAY select any one whose condition evaluates true, since at most one can. An Exclusive Gateway MUST NOT combine an unconditional Sequence Flow with conditional Sequence Flows other than as the designated default.
+
 ### WF-006 — Parallel Gateway divergence
 A diverging Parallel Gateway MUST activate every configured outgoing Sequence Flow without evaluating mutually exclusive routing conditions.
 
 ### WF-007 — Parallel Gateway convergence
-A converging Parallel Gateway MUST synchronize the applicable active incoming branches for its execution scope. This version MUST support `ALL_ACTIVE_BRANCHES`, meaning the gateway cannot complete until all branches created for that synchronization scope have arrived or have been explicitly cancelled/skipped according to published semantics.
+A converging Parallel Gateway MUST synchronize the applicable active incoming branches for its execution scope. This version MUST support `ALL_ACTIVE_BRANCHES`, meaning the gateway cannot complete until all branches created for that synchronization scope have arrived or have been explicitly cancelled/skipped according to published semantics. This version MUST also support `FIRST_ACTIVE_BRANCH`, meaning the gateway completes as soon as the first branch created for that synchronization scope arrives; the remaining branches are then cancelled per WF-016. A converging Parallel Gateway MUST declare exactly one synchronization mode, and that mode is fixed once the Process Version is published.
 
 ### WF-008 — Loops
 A Process Version MAY contain cycles. Re-entering a Flow Node through a cycle MUST create a new Flow Node Instance. Loop exit conditions MUST be explicit when the cycle is not intentionally unbounded.
@@ -1043,6 +1050,9 @@ Publishing MUST create a new immutable Process Version with a stable version ide
 
 ### WF-015 — Draft isolation
 Editing a Draft MUST NOT alter any published Process Version or running Process Instance.
+
+### WF-016 — Single-branch convergence cancellation
+When a converging Parallel Gateway configured as `FIRST_ACTIVE_BRANCH` is satisfied by the arrival of one branch, the engine MUST cancel every other non-terminal branch created for that synchronization scope, using the same cancellation cascade defined by EXEC-015 (active Flow Tokens, non-terminal Flow Node Instances, Task Instances, active Task Attempts, and recursively invoked non-terminal child Process Instances become cancelled or non-actionable), scoped to those branches rather than the whole Process Instance. Cancelling a losing branch MUST NOT create an Incident and MUST be recorded in execution history as an ordinary, expected outcome, not a failure. A durable side effect a losing branch already committed before cancellation takes effect remains committed — cancellation is best-effort and MUST occur at the next safe point per LOOP-012, not by corrupting in-flight state or fabricating a rollback that didn't happen.
 
 ### 4.3.1 Loop Protection
 
@@ -1073,8 +1083,10 @@ The engine SHOULD emit an observable warning before a hard loop limit is reached
 ### LOOP-009 — Recursive call activity protection
 Starting a child Process Instance MUST fail before creation when doing so would exceed the effective maximum Call Activity nesting depth. The parent MUST enter its configured failure/Incident behavior rather than recursively creating additional children.
 
-### LOOP-010 — Causal event-hop protection
-When a process action emits or forwards an event that can cause further process progress, the engine MUST preserve a causal-chain identifier and hop count or equivalent semantics. A finite maximum causal hop count MUST prevent event-driven ping-pong loops across processes or integrations; exceeding it MUST produce `LOOP_GUARD_TRIGGERED` or an equivalent explicitly typed Incident.
+### LOOP-010 — Causal message-hop protection
+When a process action publishes or forwards a message that can cause further process progress, the engine MUST preserve a causal-chain identifier and hop count or equivalent semantics. A finite maximum causal hop count MUST prevent message-driven ping-pong loops across processes or integrations; exceeding it MUST produce `LOOP_GUARD_TRIGGERED` or an equivalent explicitly typed Incident.
+
+Causal-chain identifier and hop count MUST be conveyed through the message-publication contract (§5.7): an Inbound Message publication MAY declare an explicit causal-chain identifier and hop count, or MAY declare the identity of the Process Instance whose reaction caused this publication, from which the engine derives the causal-chain identifier and increments the hop count automatically. A Process Instance that consumes a message MUST retain the resulting causal-chain identifier and hop count so that a subsequent publication caused by that instance's own reaction continues the same chain without requiring the caller to track the hop count manually.
 
 ### LOOP-011 — Execution-segment rollover
 An `INTENTIONALLY_UNBOUNDED` process MAY continue by creating a new Execution Segment before the current segment reaches its history/event budget. Rollover MUST be atomic at a safe point, MUST preserve Process Instance identity, required Execution Context, open logical lineage, and lifetime loop counters, and MUST start the new segment with a fresh segment-local history budget. Rollover MUST NOT erase evidence that prior guard warnings or incidents occurred.
@@ -1150,7 +1162,7 @@ Each Process Instance MUST expose an ordered, append-only logical execution hist
 ### 4.5 User Tasks and Forms
 
 ### HUM-001 — Assignment resolution
-Before a User Task becomes actionable, it MUST resolve to at least one eligible ACTIVE Human Actor as direct assignee or Potential Owner. Failure to resolve any eligible human MUST create an Incident rather than silently skipping the task.
+Before a User Task becomes actionable, it MUST resolve to at least one eligible ACTIVE Human Actor as direct assignee or Potential Owner. Failure to resolve any eligible human MUST create an Incident rather than silently skipping the task. A published Process Version MAY declare a User Task whose assignment resolves dynamically at runtime (for example, by Organization Unit membership) and therefore cannot be verified as non-empty at publication time; publication MUST NOT be blocked solely because static assignment resolution is empty, provided the assignment rule itself is structurally valid.
 
 ### HUM-002 — Potential Owner semantics
 A Potential Owner is eligible to claim the User Task but MUST NOT have exclusive completion authority until claim succeeds, unless the task is configured for Potential Owner completion without claim.
@@ -1250,7 +1262,7 @@ A successful exclusive claim MUST atomically establish the claimant's `MY_TASKS`
 Each Task List item MUST expose, when authorized and applicable: Task Instance identifier; task kind and status; actor relationship such as `ASSIGNEE`, `POTENTIAL_OWNER`, or `EXECUTOR`; Process identifier; exact Process Version; Process Instance identifier; Flow Node key or equivalent task-definition identity; human-readable task/node label when defined; priority; `available_at`; due/follow-up time when present; and machine-readable permitted actions for the current Principal/Process Actor context. Form/schema presence MAY be represented by reference rather than embedding the full schema.
 
 ### TLIST-011 — Task List filtering
-Task List queries MUST support conjunctive filtering by at least view/relationship, Process, Process Instance, task kind, task status, and priority. They MUST additionally support due-time filtering when due metadata is present. Deployments with Entry Points or Organization Units SHOULD support filtering by Entry Point and Organization Unit where authorized.
+Task List queries MUST support conjunctive filtering by at least view/relationship, Process, Process Instance, task kind, task status, and priority. They MUST additionally support due-time filtering when due metadata is present. Deployments with Entry Points SHOULD support filtering by Entry Point where authorized. When Organization Units are enabled, Task List queries and administrative task queries (API-007) MUST support filtering by Organization Unit (`SELF_ONLY` or `SELF_AND_DESCENDANTS`), matched against each task's derived Organization Unit scope per ORG-008, subject to the caller's own authorization.
 
 ### TLIST-012 — Deterministic sorting and pagination
 Task List queries MUST support deterministic pagination and at least sorting by priority, due time, and task availability/creation time. A sort order MUST include a stable tie-breaker such as Task Instance identifier. Continuation metadata MUST preserve the effective filter and sort contract; concurrent task-state changes MAY affect later pages but MUST NOT weaken authorization.
@@ -1270,22 +1282,22 @@ The Task List MUST be the authoritative actor-facing projection of current work.
 A `TIMER` Intermediate Catch Event MUST persist its due instant durably enough to survive process restart and MUST fire at most once.
 
 ### EVT-002 — Message subscription
-A `MESSAGE` Intermediate Catch Event MUST open a durable Event Subscription containing at least the configured message/event name, correlation key, owning Flow Node Instance, open time, and optional expiry. The persistence record is a Headless BPM runtime extension; the catching Flow Node remains a BPMN Intermediate Catch Event.
+A `MESSAGE` Intermediate Catch Event MUST open a durable Message Subscription containing at least the configured message name, correlation key, owning Flow Node Instance, open time, and optional expiry. The persistence record is a Headless BPM runtime extension; the catching Flow Node remains a BPMN Intermediate Catch Event.
 
-### EVT-003 — External message/event publication contract
-Inbound external publication MUST accept a declared event/message name, correlation key, payload, and SHOULD accept an external message ID for deduplication. External publication is a protected mutation.
+### EVT-003 — External message publication contract
+Inbound message publication MUST accept a declared message name, correlation key, payload, and SHOULD accept an external message ID for deduplication. Message publication is a protected mutation.
 
 ### EVT-004 — Correlation result
-In single-consumer mode an inbound message/event MUST consume at most one matching open subscription. If multiple matches would be equally valid, the Process model or runtime routing rule MUST disambiguate; otherwise the input MUST NOT be consumed and an ambiguity error MUST be surfaced.
+In single-consumer mode an Inbound Message MUST consume at most one matching open subscription. If multiple matches would be equally valid, the Process model or runtime routing rule MUST disambiguate; otherwise the input MUST NOT be consumed and an ambiguity error MUST be surfaced.
 
-### EVT-005 — Duplicate inbound message/event
+### EVT-005 — Duplicate inbound message
 When an external message ID is provided, duplicate submission of that same message ID within the configured retention period MUST NOT cause more than one subscription consumption or Process advancement.
 
 ### EVT-006 — Unmatched message behavior
-Each applicable `MESSAGE` Intermediate Catch Event MUST use `REJECT` or `BUFFER_UNTIL_EXPIRY` for unmatched early input; default is `REJECT`. A rejected unmatched message/event MUST NOT later be auto-correlated. A buffered input MAY be correlated later only before its expiry.
+Each applicable `MESSAGE` Intermediate Catch Event MUST use `REJECT` or `BUFFER_UNTIL_EXPIRY` for an unmatched early Inbound Message; default is `REJECT`. A rejected unmatched message MUST NOT later be auto-correlated. A buffered message MAY be correlated later only before its expiry.
 
 ### EVT-007 — Subscription expiry
-When an Event Subscription reaches its configured expiry without consumption, it MUST close exactly once and follow the Process Version's explicit timeout behavior. If expiry is configured but timeout behavior is not defined, publication MUST fail validation.
+When a Message Subscription reaches its configured expiry without consumption, it MUST close exactly once and follow the Process Version's explicit timeout behavior. If expiry is configured but timeout behavior is not defined, publication MUST fail validation.
 
 ### EVT-008 — Conditional Catch Event
 A `CONDITIONAL` Intermediate Catch Event MUST declare which Execution Context values can satisfy it. The condition MUST be reevaluated when one of those declared values changes or when an explicit reevaluation operation occurs; implementation-defined busy polling MUST NOT be required for conformance.
@@ -1293,7 +1305,7 @@ A `CONDITIONAL` Intermediate Catch Event MUST declare which Execution Context va
 ### 4.8 Incidents and Recovery
 
 ### INC-001 — Incident creation
-The system MUST create an Incident when execution cannot safely progress because of unresolved assignment, exhausted/blocked Service Task work configured for incident handling, invalid runtime integration state, event-correlation ambiguity, or another defined recoverable runtime condition.
+The system MUST create an Incident when execution cannot safely progress because of unresolved assignment, exhausted/blocked Service Task work configured for incident handling, invalid runtime integration state, message-correlation ambiguity, or another defined recoverable runtime condition.
 
 ### INC-002 — Incident blocking
 An open Incident MUST prevent the affected Flow Node Instance from reporting successful completion and MUST remain associated with its Process Instance until resolved or cancelled.
@@ -1370,7 +1382,7 @@ Runtime diagram rendering MUST be read-only, MUST NOT imply that aggregated visu
 An authorized Admin MUST be able to retrieve a fleet-level Operations Summary containing, at minimum, Process Instance counts by current lifecycle state, actionable/claimed/overdue Task counts, open Incident count, and open Operational Finding counts grouped by finding type. The summary MUST identify an observation timestamp or equivalent `as_of` point.
 
 ### OPS-020 — Operations Summary scope and authorization
-Operations Summary queries MUST support filtering by at least Process, Process Version, Entry Point, Process Instance lifecycle state, and time window where applicable; Organization Unit filtering SHOULD be supported when organization scope is enabled. Aggregation MUST occur only over resources visible to the caller and MUST NOT disclose inaccessible resource existence through totals, dimensions, or filter behavior. Implementations MAY serve the summary from a documented materialized projection if its observation time/freshness is exposed.
+Operations Summary queries MUST support filtering by at least Process, Process Version, Entry Point, Process Instance lifecycle state, and time window where applicable; when Organization Units are enabled, Operations Summary queries MUST support filtering by Organization Unit (`SELF_ONLY` or `SELF_AND_DESCENDANTS`), matched against each contributing Task's derived Organization Unit scope per ORG-008 or, where implemented, a Process's Organization Unit association per ORG-011. Aggregation MUST occur only over resources visible to the caller and MUST NOT disclose inaccessible resource existence through totals, dimensions, or filter behavior. Implementations MAY serve the summary from a documented materialized projection if its observation time/freshness is exposed.
 
 ### OPS-021 — First-class Bulk Operation
 Headless BPM MUST model a Bulk Operation as a durable administrative resource with stable identity, requesting Principal, action type, frozen target set reference, reason, optional ticket/reference, idempotency identity, creation time, and execution status. Required action types are `RETRY_INCIDENTS`, `CANCEL_INSTANCES`, `PAUSE_INSTANCES`, `RESUME_INSTANCES`, `REASSIGN_TASKS`, and `RELEASE_STALE_CLAIMS`.
@@ -1451,13 +1463,13 @@ If the original idempotent mutation is still in progress, a duplicate request MU
 ### 4.11 Public Interfaces
 
 ### API-001 — CLI coverage
-The system MUST expose CLI operations for process authoring/validation/publication, BPMN validate/analyze/import/export, structured Flow Node and Sequence Flow Draft authoring, and diagram rendering, Entry Point administration/start, Process Instance inspection/cancellation/pause/resume/intervention/activity/operational-status/runtime-diagram, fleet Operations Summary, Bulk Operations, CLI help/version/system status, User Task and Service Task operations, operational findings, event publication, Notification Center inspection, incident inspection/recovery, identity administration, optional Organization Unit and Actor-membership administration, API-key lifecycle, authorization-grant administration, consumption-limit/credit-bucket administration where authorized, and audit/history inspection.
+The system MUST expose CLI operations for process authoring/validation/publication, BPMN validate/analyze/import/export, structured Flow Node and Sequence Flow Draft authoring, and diagram rendering, Entry Point administration/start, Process Instance inspection/cancellation/pause/resume/intervention/activity/operational-status/runtime-diagram, fleet Operations Summary, Bulk Operations, CLI help/version/system status, User Task and Service Task operations, operational findings, message publication, Notification Center inspection, incident inspection/recovery, identity administration, optional Organization Unit and Actor-membership administration, API-key lifecycle, authorization-grant administration, consumption-limit/credit-bucket administration where authorized, and audit/history inspection.
 
 ### API-002 — REST coverage
-The system MUST expose versioned REST resources for Processes, Process Versions, BPMN validate/analyze/import/export, structured Draft Flow Node/Sequence Flow authoring, and diagram rendering, Entry Points and Entry Point starts, Process Instances including pause/resume/intervention/activity/operational-status/runtime-diagram, fleet Operations Summary, Bulk Operations, system information/status and health checks, Flow Node history, Execution Context, tasks, operational findings, Actor Task Lists and task assignments/attempts where applicable, event publication, incidents, identities permitted to the Principal, Organization Units and actor memberships when enabled, API-key credentials/metadata, authorization grants, consumption-limit policies, credit-bucket definitions/state, and non-human notifications.
+The system MUST expose versioned REST resources for Processes, Process Versions, BPMN validate/analyze/import/export, structured Draft Flow Node/Sequence Flow authoring, and diagram rendering, Entry Points and Entry Point starts, Process Instances including pause/resume/intervention/activity/operational-status/runtime-diagram, fleet Operations Summary, Bulk Operations, system information/status and health checks, Flow Node history, Execution Context, tasks, operational findings, Actor Task Lists and task assignments/attempts where applicable, message publication, incidents, identities permitted to the Principal, Organization Units and actor memberships when enabled, API-key credentials/metadata, authorization grants, consumption-limit policies, credit-bucket definitions/state, and non-human notifications.
 
 ### API-003 — MCP coverage
-The system MUST expose MCP tools for the same core Process, Entry Point, Process Instance including administrative recovery/activity/operational status/runtime diagram, fleet Operations Summary, Bulk Operations, system information/status, task, operational finding, event, incident, Notification Center, and optional organization/membership behaviors available through REST; BPMN validate/analyze/import/export, structured Draft authoring, and diagram-render tools MUST be exposed when process-authoring administration is enabled, subject to the same authorization semantics. Anonymous/public HTTP initiation need not be exposed as unauthenticated MCP.
+The system MUST expose MCP tools for the same core Process, Entry Point, Process Instance including administrative recovery/activity/operational status/runtime diagram, fleet Operations Summary, Bulk Operations, system information/status, task, operational finding, message, incident, Notification Center, and optional organization/membership behaviors available through REST; BPMN validate/analyze/import/export, structured Draft authoring, and diagram-render tools MUST be exposed when process-authoring administration is enabled, subject to the same authorization semantics. Anonymous/public HTTP initiation need not be exposed as unauthenticated MCP.
 
 ### API-014 — Actor REST surface
 The REST API MUST support actor-facing operations corresponding to the actor-safe operation catalog and MUST authorize them by REST Operation ID plus process-resource scope. `task.list` MUST implement the Task List views and query semantics defined by TLIST-001 through TLIST-015. Deployments MAY expose dedicated `/actor/...` routes or reuse general resources; either design MUST preserve the same logical operation IDs and authorization behavior.
@@ -1534,6 +1546,9 @@ The CLI MUST expose `version` (and SHOULD support `--version`) plus `status`; RE
 ### API-033 — Health-check interfaces
 REST MUST expose separate minimal liveness and readiness endpoints, canonically `GET /health/live` and `GET /health/ready` or documented stable equivalents. These endpoints MUST implement SYS-003, MUST NOT mutate state, and MAY be available without general API authentication when deployed for infrastructure health probing.
 
+### API-034 — MCP hosted mode
+The MCP interface MUST be exposable over a network-reachable, stateless request/response transport (for example HTTP), in addition to any local/stdio transport a deployment also offers, so that MCP tool calls can be served by a horizontally-scaled or serverless/hosted deployment without relying on in-process session state between calls. A hosted MCP request MUST authenticate using the same credential mechanisms as REST, and MUST be authorized identically to the equivalent REST/CLI operation per API-004. All state required to service one MCP tool call MUST be durable (database-backed) rather than held in server-process memory, so that consecutive calls from the same caller MAY be served by different server instances or serverless invocations without loss of correctness.
+
 ### API-004 — Behavioral parity
 Where CLI, REST, and MCP expose the same logical operation, they MUST produce equivalent state transitions, validation, idempotency, and authorization outcomes.
 
@@ -1546,8 +1561,8 @@ At minimum, public interfaces MUST distinguish `AUTHENTICATION_REQUIRED`, `FORBI
 ### API-007 — List semantics
 List operations MUST support deterministic pagination and SHOULD support filters relevant to the resource, including process/version, Process Instance state, task state, actor, Correlation ID, incident state, and notification state where applicable.
 
-### API-008 — Protected event publication
-REST, MCP, and CLI MUST provide an authorized event-publication operation equivalent to the EVT requirements.
+### API-008 — Protected message publication
+REST, MCP, and CLI MUST provide an authorized message-publication operation equivalent to the EVT requirements.
 
 ### API-009 — Runtime inspection
 Authorized Principals MUST be able to inspect current Process Instance state, current Flow Node Instances, active/waiting Tasks, Task Attempts, open waits/subscriptions, child Process Instance lineage, incidents, and ordered execution history.
@@ -1566,7 +1581,7 @@ REST, MCP, and CLI MUST expose authorized grant create/list/get/delete or equiva
 ### 4.12 Audit, Observability, Security, and Reliability
 
 ### AUD-001 — Audit coverage
-The system MUST retain Audit Events for process publication, Entry Point create/update/enable/disable and root execution start, identity/profile/authorization administration, API-key create/rotate/revoke, consumption-policy/credit-bucket administration and top-up/reset, execution cancel/pause/resume, Administrative Intervention and delegated/override actions, task claim/unclaim/reassign/complete/fail, event publication, incident retry/resolve, and notification acknowledgement.
+The system MUST retain Audit Events for process publication, Entry Point create/update/enable/disable and root execution start, identity/profile/authorization administration, API-key create/rotate/revoke, consumption-policy/credit-bucket administration and top-up/reset, execution cancel/pause/resume, Administrative Intervention and delegated/override actions, task claim/unclaim/reassign/complete/fail, message publication, incident retry/resolve, and notification acknowledgement.
 
 ### AUD-002 — Audit attribution
 Each Audit Event MUST identify action, time, target object, authenticated Principal/backing identity when present or `System`/`Unauthenticated` as applicable, Entry Point for root starts, request correlation identifier where available, and resulting state when applicable.
@@ -1621,7 +1636,7 @@ sequence-flow  create | update | delete | list | get
 task-list      list  # --view MY_TASKS|AVAILABLE|MY_WORK|COMPLETED_BY_ME|TEAM_TASKS
 user-task   list | get | claim | unclaim | reassign | complete
 service-task list | get | claim | release | complete | fail | attempts
-event        publish
+message      publish
 incident     list | get | retry | resolve
 notification list | get | acknowledge
 identity     get | list | create | update | enable | disable
@@ -1730,7 +1745,7 @@ POST   /v1/tasks/{task_id}/complete
 POST   /v1/tasks/{task_id}/fail
 GET    /v1/tasks/{task_id}/attempts
 
-POST   /v1/events
+POST   /v1/messages
 
 GET    /v1/incidents
 GET    /v1/incidents/{incident_id}
@@ -1827,7 +1842,7 @@ POST   /v1/actor/tasks/{task_id}/claim
 POST   /v1/actor/tasks/{task_id}/release
 POST   /v1/actor/tasks/{task_id}/complete
 POST   /v1/actor/tasks/{task_id}/fail
-POST   /v1/actor/events
+POST   /v1/actor/messages
 GET    /v1/actor/notifications
 POST   /v1/actor/notifications/{notification_id}/acknowledge
 
@@ -1869,7 +1884,7 @@ process_sequence_flow_create, process_sequence_flow_list, process_sequence_flow_
 flow_node_list, flow_node_get
 user_task_list, user_task_get, user_task_claim, user_task_unclaim, user_task_reassign, user_task_complete
 service_task_list, service_task_get, service_task_claim, service_task_release, service_task_complete, service_task_fail, service_task_attempts
-event_publish
+message_publish
 incident_list, incident_get, incident_retry, incident_resolve
 operational_finding_list, operational_finding_get
 operations_summary
@@ -1890,7 +1905,7 @@ actor_capabilities
 actor_entry_point_start
 actor_process_instance_get, actor_process_instance_context_get
 actor_task_list, actor_task_get, actor_task_claim, actor_task_release, actor_task_complete, actor_task_fail  # task_list supports canonical Task List views/filters
-actor_event_publish
+actor_message_publish
 actor_notification_list, actor_notification_get, actor_notification_acknowledge
 audit_list
 ```
@@ -2139,11 +2154,11 @@ A normal successful task completion request MUST identify the Task Instance and 
 
 A completion request received after the task is terminal MUST NOT alter process state. If it matches a prior idempotent successful request, the prior result MUST be returned; otherwise `INVALID_STATE` MUST be returned.
 
-### 5.7 Event Publication Contract
+### 5.7 Message Publication Contract
 
-An event-publication operation MUST contain:
+A message-publication operation MUST contain:
 
-- `event_name`;
+- `message_name`;
 - `correlation_key`;
 - `payload` (which MAY be empty);
 - optional `external_message_id`;
@@ -2172,14 +2187,14 @@ The Notification Center is a durable logical mailbox, not a visual UI. An entry 
 - The product MUST remain operable without a GUI (SYS-001).
 - Process semantics MUST be portable across implementations; no specific engine or physical persistence design is required.
 - Form schemas define data contracts, not presentation or styling.
-- `Flow Token`, `Flow Node Instance`, `Task Attempt`, `Event Subscription`, `Incident`, `Execution Event`, and `Audit Event` are required logical concepts; a physical implementation MAY encode them differently if all observable semantics remain conformant.
+- `Flow Token`, `Flow Node Instance`, `Task Attempt`, `Message Subscription`, `Incident`, `Execution Event`, and `Audit Event` are required logical concepts; a physical implementation MAY encode them differently if all observable semantics remain conformant.
 - User Task email and non-human Notification Center behavior are intentionally separate delivery models (NOT-010).
 - Task List is a headless query/projection contract and MUST NOT require a built-in task inbox UI.
 - Notification state MUST NOT become a hidden alternate process state machine or replace authoritative Task List/task state.
 - Execution history need not be the authoritative event-sourced persistence model; it must nevertheless expose the required ordered history.
 - Correlation ID is non-unique by default; callers requiring unique starts SHOULD use idempotent start operations or an external uniqueness policy.
 - Owner/delegate human assignment roles are not required in this version.
-- Broadcast external-event correlation is not required in this version.
+- Broadcast external-message correlation is not required in this version.
 
 ## 7. Verification and Acceptance
 
@@ -2217,8 +2232,8 @@ Given a Cyclic Region with an effective entry limit of 100, when 100 permitted e
 Given a loop whose Progress Marker is `remaining_items` and whose no-progress limit is 10, when the loop re-enters ten configured observation points with the same canonical marker value and would do so an eleventh time, then new work is blocked and `LOOP_GUARD_TRIGGERED` is created; when the marker decreases before the limit, the no-progress counter resets.
 **ACC-028 — LOOP-004, LOOP-009:** Recursive call activity guard  
 Given an effective Call Activity nesting-depth limit of 32, when a level-32 instance attempts to create another nested child, then the additional child is not created and the configured failure/Incident path is taken.
-**ACC-029 — LOOP-010:** Event ping-pong guard  
-Given two processes emit mutually correlated events within one causal chain, when the configured maximum causal hop count is reached, then the next hop is rejected before causing additional process progress and an explicitly typed loop-guard Incident is recorded.
+**ACC-029 — LOOP-010:** Message ping-pong guard  
+Given two processes publish mutually correlated messages within one causal chain, when the configured maximum causal hop count is reached, then the next hop is rejected before causing additional process progress and an explicitly typed loop-guard Incident is recorded.
 **ACC-030 — LOOP-011, LOOP-012, LOOP-013:** Safe unbounded rollover  
 Given an intentionally unbounded process approaching its segment history budget, when a deterministic safe point is reached, then a new Execution Segment is created atomically with preserved Process Instance identity, required context and lifetime loop counters, while the new segment starts with a fresh segment-local history budget.
 **ACC-031 — LOOP-014, AUD-001:** Audited loop recovery  
@@ -2246,9 +2261,9 @@ Given a parent Process invokes a child Process through a Call Activity, when the
 **ACC-014 — EVT-001, REL-001:** Durable timer  
 Given a TIMER Intermediate Catch Event is open and the engine process restarts before its due instant, when the due instant arrives, then the Timer Catch Event fires no more than once and execution continues consistently.
 **ACC-015 — EVT-002, EVT-003, EVT-004, INV-008:** Message Catch Event correlation  
-Given exactly one open subscription matches event name and correlation key, when an authorized event is published, then that subscription is consumed once and the waiting Intermediate Catch Event may continue.
-**ACC-016 — EVT-005:** Duplicate external message/event  
-Given an inbound event with external message ID `X` was already correlated, when `X` is resubmitted during retention, then no additional subscription is consumed and the result is reported as duplicate.
+Given exactly one open subscription matches message name and correlation key, when an authorized message is published, then that subscription is consumed once and the waiting Intermediate Catch Event may continue.
+**ACC-016 — EVT-005:** Duplicate external message  
+Given an Inbound Message with external message ID `X` was already correlated, when `X` is resubmitted during retention, then no additional subscription is consumed and the result is reported as duplicate.
 **ACC-017 — EVT-006:** Unmatched Message Catch Event policy  
 Given one MESSAGE Intermediate Catch Event uses `REJECT` and another uses `BUFFER_UNTIL_EXPIRY`, when each receives an early unmatched event, then the first is not retained for later correlation and the second may correlate later only before expiry.
 **ACC-018 — INC-003, INC-004, INC-005, INC-006, INV-011:** Incident recovery history  
@@ -2262,7 +2277,7 @@ Given a Process Instance has active tasks, a Timer Catch Event, a Message Catch 
 **ACC-022 — AUTH-003, API-004:** Cross-interface parity  
 Given the same actor performs an equivalent logical operation through REST and MCP from equivalent state, then authorization, validation, state transition, idempotency, and error semantics are equivalent.
 **ACC-023 — EXEC-018, AUD-001, AUD-002, OBS-002:** History completeness  
-Given process publication, task activity, retries, event correlation, and cancellation or completion occur, when an authorized Principal inspects execution and audit history, then each event is ordered/attributable and earlier history has not been overwritten.
+Given process publication, task activity, retries, message correlation, and cancellation or completion occur, when an authorized Principal inspects execution and audit history, then each event is ordered/attributable and earlier history has not been overwritten.
 **ACC-024 — REL-001, REL-002:** Restart durability  
 Given active User Tasks/Service Tasks, catch-event subscriptions, notifications, and incidents exist, when the service undergoes a normal restart, then those logical states are neither lost nor duplicated and any completed public mutation remains atomically visible.
 **ACC-032 — IDN-005, AUTH-009:** Disabled user  
@@ -2296,9 +2311,9 @@ Given an ACTIVE Human Actor is assigned a User Task but has no resolvable email 
 **ACC-046 — PART-006:** Non-human availability is not lifecycle  
 Given an ACTIVE Non-Human Actor changes runtime availability from AVAILABLE to UNAVAILABLE, when inspected, then lifecycle remains ACTIVE, availability is independently observable, and assignment/execution handling follows process policy rather than treating the actor as retired.
 **ACC-047 — PAC-001, PAC-002, PAC-005, API-014:** REST operation allowlist  
-Given a Non-Human Actor credential is associated with a profile allowing only `task.read` and `task.complete` through REST for process `order-to-cash`, when it reads/completes its matching assigned task the operations may succeed, and when it calls `event.publish`, an unrelated process task, or a platform endpoint the request is denied.
+Given a Non-Human Actor credential is associated with a profile allowing only `task.read` and `task.complete` through REST for process `order-to-cash`, when it reads/completes its matching assigned task the operations may succeed, and when it calls `message.publish`, an unrelated process task, or a platform endpoint the request is denied.
 **ACC-048 — PAC-003, PAC-005, PAC-008, API-015:** MCP tool allowlist  
-Given an Actor profile permits only `actor_task_get` and `actor_task_complete` through MCP, when the actor discovers MCP capabilities it sees only currently usable actor tools/scopes, and invocation of `process_publish` or `actor_event_publish` is denied even if those tools exist on the same server.
+Given an Actor profile permits only `actor_task_get` and `actor_task_complete` through MCP, when the actor discovers MCP capabilities it sees only currently usable actor tools/scopes, and invocation of `process_publish` or `actor_message_publish` is denied even if those tools exist on the same server.
 **ACC-049 — PAC-004, PAC-006, API-016:** Interface-specific Actor access  
 Given a profile allows `task.complete` through REST but not MCP, when the same Actor and task are used through equivalent authenticated sessions, REST completion may succeed while the MCP completion tool is unavailable or denied; this difference is intentional profile policy rather than inconsistent authorization.
 **ACC-050 — PAC-009, PAC-010:** Capability profile revocation  
@@ -2470,11 +2485,21 @@ Given a command returns structured data, when it is invoked in JSON output mode 
 **ACC-133 — SYS-002, API-032:** Runtime version discovery  
 Given a running deployment, when an operator queries CLI `version`, REST system info, or MCP `system_info`, then the result identifies the running implementation version, API version support, and declared SPEC compatibility consistently rather than merely echoing static documentation metadata.
 **ACC-134 — SYS-003, API-033:** Liveness and readiness separation  
-Given the service process is responsive but authoritative persistence is unavailable, when health checks are queried, then liveness may report success while readiness reports failure, and neither endpoint exposes protected configuration or mutates state.
+Given the service process is responsive but authoritative persistence is unavailable, when health checks are queried, then liveness may report success while readiness reports failure, neither endpoint exposes protected configuration or mutates state, and the underlying failure detail is recorded to a server-side operator-only log channel rather than the public response.
 **ACC-135 — SYS-004, API-032:** Detailed system status  
 Given an authenticated operator queries system status while a required runtime component is impaired, then the overall status reports `DEGRADED` or `UNAVAILABLE` as applicable, identifies the affected component without secrets, and CLI/REST/MCP expose equivalent logical status.
 **ACC-136 — CLI-005, OPS-022, API-031:** Safe high-impact CLI operation  
 Given an Admin prepares a Bulk Operation from the CLI, when the action can affect many resources, then a normative preview/dry-run path is available before execution and automation can explicitly confirm non-interactively without bypassing authorization or per-target revalidation.
+**ACC-137 — WF-001, PART-001:** Fully autonomous agent process  
+Given a published Process Version contains only Service Task Flow Nodes assigned to `AGENT`-type Non-Human Actors and no User Task, when it is started and every Service Task completes, then the Process Instance runs to completion with no human claim, form, or email involved at any point.
+**ACC-138 — TLIST-011, OPS-020, ORG-008:** Admin organization-wide task and summary query  
+Given tasks across three different Processes are scoped to `Finance` via their own assignment rules, when an authorized Admin queries the administrative task list and the Operations Summary each filtered by Organization Unit `Finance` with `SELF_AND_DESCENDANTS`, then only Finance-scoped tasks and their aggregate counts are returned regardless of which Process they belong to, and tasks/instances outside that scope are not disclosed.
+**ACC-139 — ORG-001, ORG-011:** Optional Process-Organization association  
+Given a deployment does not implement Process-Organization association, when Processes and the Operations Summary are queried, then behavior remains fully conforming without a Process-level Organization Unit filter; given a deployment does implement it, when a Process is associated with `Finance` and later dissociated, then Process listing and Operations Summary queries reflect the current association without altering the Process's BPMN semantics, published Process Versions, or historical Process Instance attribution.
+**ACC-140 — WF-007, WF-016, EXEC-005, EXEC-015:** Single-branch Parallel Gateway convergence  
+Given a diverging Parallel Gateway creates three branches and a converging Parallel Gateway uses `FIRST_ACTIVE_BRANCH`, when the first branch completes, then the converging Gateway completes immediately, the two other branches' non-terminal Task Instances and Flow Node Instances become cancelled without an Incident, and the process advances exactly once.
+**ACC-141 — API-034, API-004:** Hosted MCP transport  
+Given an MCP tool call is sent as a JSON-RPC request over the network-reachable MCP HTTP transport with no prior session established, when the request carries a valid REST-equivalent credential, then it is authenticated and authorized identically to the equivalent REST call and succeeds; when it carries no credential, then it is rejected the same way an unauthenticated REST request would be, without relying on any server-side session state from a prior call.
 
 ### 7.3 Conformance Checklist
 
@@ -2507,9 +2532,11 @@ Given an Admin prepares a Bulk Operation from the CLI, when the action can affec
 - [ ] Process Actor status does not imply platform authority.
 - [ ] Actor Source updates preserve external lifecycle authority and stable identity.
 - [ ] Inbound Actor Credentials and outbound third-party credentials are logically separated.
-- [ ] Process credentials can be restricted by process/node/task/event scope.
+- [ ] Process credentials can be restricted by process/node/task/message scope.
 - [ ] Process Access Profiles can independently allowlist Actor REST Operation IDs and MCP Tool IDs.
 - [ ] Organization support may be absent; when enabled, hierarchy is acyclic, Process Actors may have multiple memberships, and organization-derived assignment/authorization is explicitly scoped.
+- [ ] When Organization Units are enabled, administrative task queries and the Operations Summary support filtering by Organization Unit without leaking out-of-scope resources.
+- [ ] Optional Process-Organization association, where implemented, supports add/list/remove and Organization Unit filtering of Processes without granting assignment eligibility, authorization, or platform permissions.
 - [ ] Actor API/MCP discovery reveals only currently authorized process capabilities and scopes.
 - [ ] An Actor capability profile cannot grant platform-administration authority.
 - [ ] API-key secrets are one-time disclosed, revocable, rotatable, expirable, and independently restrictable.
@@ -2528,6 +2555,9 @@ Given an Admin prepares a Bulk Operation from the CLI, when the action can affec
 - [ ] Bulk Operations require preview/frozen selection, revalidate every target at execution, preserve single-target semantics, and expose per-target results/history.
 - [ ] Unsupported BPMN executable elements/extensions fail explicitly rather than being silently reinterpreted.
 - [ ] Mermaid is used only for informative non-BPMN architecture/system diagrams, never as canonical BPMN Process interchange.
+- [ ] A Process Version with only Service Task Flow Nodes (no User Task) publishes and executes to completion as a fully autonomous, non-human-orchestrated process.
+- [ ] A converging Parallel Gateway declares exactly one of `ALL_ACTIVE_BRANCHES` or `FIRST_ACTIVE_BRANCH`; under `FIRST_ACTIVE_BRANCH`, the first arrival completes the join and every other non-terminal branch is cancelled via the EXEC-015 cascade without creating an Incident.
+- [ ] MCP tool calls succeed over a stateless, network-reachable transport with no prior session, authenticating and authorizing identically to the equivalent REST call.
 - [ ] Every normative requirement and invariant is represented in `TRACE.md`.
 
 ## 8. Notes and Rationale
@@ -2585,7 +2615,7 @@ For weighted credits, a token-bucket-style representation is recommended: `capac
 The recommended implementation is layered rather than relying on one heuristic:
 
 1. **Publish-time graph analysis:** use Tarjan's strongly connected components algorithm (or Kosaraju/equivalent) to identify all cyclic regions in `O(V+E)`. SCCs are preferable to enumerating every simple cycle because cycle enumeration can become exponential on dense graphs.
-2. **Deterministic runtime budgets:** maintain monotonic counters for cyclic-region entries, Sequence Flow traversals, active tokens, causal event hops, nested children, and segment history. These are the authoritative hard-stop mechanism.
+2. **Deterministic runtime budgets:** maintain monotonic counters for cyclic-region entries, Sequence Flow traversals, active tokens, causal message hops, nested children, and segment history. These are the authoritative hard-stop mechanism.
 3. **No-progress detection:** only compare explicitly declared Progress Markers. Canonicalize the marker tuple and compare exact canonical values; implementations MAY cache a cryptographic or collision-resistant digest but SHOULD retain enough information to resolve a collision safely. Generic whole-context hashing is NOT RECOMMENDED because harmless timestamps, IDs, or audit fields can hide a true no-progress loop.
 4. **Checkpoint/rollover for legitimate endless processes:** use bounded Execution Segments so intentionally long-running processes can refresh segment-local history while retaining lifetime identity and guard counters. This follows the durable-execution pattern commonly called Continue-As-New; it avoids treating long history as evidence that the business process itself is invalid.
 5. **Incident instead of auto-failure:** stop before the prohibited activation and create `LOOP_GUARD_TRIGGERED`. This preserves diagnosability and lets an Admin decide whether the loop is erroneous or intentionally needs a higher bound.
@@ -2597,14 +2627,15 @@ Suggested starting defaults are deployment guidance, not normative product limit
 1. Define the canonical expression language and sandbox/security rules for conditions and data mappings.
 2. Define the canonical Form Schema format; JSON Schema is preferred but is not yet normative.
 3. Define concrete authentication protocols for Platform Principals and Process Actors; platform API-key lifecycle is defined by KEY-001–007 and Actor Credential semantics by PCRED-001–003.
-4. Define default deployment-level retry/backoff, notification retention, idempotency retention, and buffered-event retention values.
+4. Define default deployment-level retry/backoff, notification retention, idempotency retention, and buffered-message retention values.
 5. Decide whether owner/delegate human assignment roles become required in a later version.
 6. Decide whether BPMN Signal/broadcast or multi-consumer external-message correlation is added in a later version.
 7. Decide whether scheduled/time-based process-start trigger definitions become first-class resources; externally invoked root start is now modeled by Entry Points.
 8. Decide the long-term compatibility policy for preserving arbitrary third-party BPMN `extensionElements` across edits that structurally replace or delete the BPMN element carrying those extensions.
 9. Define deployment-default stale-detection thresholds and whether selected Operational Findings auto-create Incidents; 0.14.0 defines observable semantics but not universal thresholds.
 10. Decide whether active Process Instances may be explicitly migrated between immutable published Process Versions, including migration-plan validation, Flow Node mapping, safe-state constraints, rollback/failure semantics, and audit requirements. No Process Instance version-migration capability is required by 0.14.0.
-11. Decide whether Admins need global cross-instance views for runtime waits and scheduled work such as timers, retries/jobs, event/message subscriptions, and claim leases. 0.14.0 requires per-instance operational inspection plus aggregate Operations Summary, but no separate fleet-wide runtime-wait/job/subscription resource.
+11. Decide whether Admins need global cross-instance views for runtime waits and scheduled work such as timers, retries/jobs, message subscriptions, and claim leases. 0.14.0 requires per-instance operational inspection plus aggregate Operations Summary, but no separate fleet-wide runtime-wait/job/subscription resource.
 12. Decide whether the platform defines a standard operational metrics/export contract, for example Prometheus/OpenTelemetry-compatible engine, queue, timer-lag, retry-lag, task, incident, and API metrics, rather than leaving metrics integration implementation-defined.
 13. Decide whether process-performance analytics become a first-class capability, including throughput, duration percentiles, WIP, bottleneck analysis, path frequency, task waiting time, SLA performance, and historical trend aggregation.
 14. Decide whether operational alert rules and alert-delivery integrations become first-class resources over Incidents, Operational Findings, metrics, or activity conditions.
+15. Decide whether FEEL (as used by DMN/Zeebe) is adopted as an explicitly-tagged additional Sequence Flow condition language alongside Open Issue #1's canonical expression language; FEEL's declarative, side-effect-free evaluation model is naturally sandboxed, which speaks in its favor. If adopted, this MUST define the Execution-Context-to-FEEL type mapping, prohibit non-deterministic built-ins (for example `now()`/`today()`) in Gateway conditions per WF-005's determinism requirement, and define the null/error-evaluation policy. A general-purpose Complex Gateway remains explicitly out of scope regardless (see §1's excluded elements); an AI-driven or otherwise arbitrarily complex routing decision is expected to be computed by a Service Task and exposed as a plain output variable, with the Gateway itself only ever evaluating a deterministic condition over that variable.

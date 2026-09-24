@@ -1,11 +1,9 @@
 ---
 specmd: "0.4.3"
-part_of_spec: "0.14.0"
+part_of_spec: "0.18.0"
 status: informative
 name: "Headless BPM Logical ERD"
 ---
-
-<!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # Headless BPM — Canonical Logical ERD
 
@@ -23,7 +21,7 @@ Authority: `SPEC.md` 0.14.0 is the sole normative behavioral contract. Requireme
 4. Preserve exact Process-Version binding for every execution.
 5. Preserve parallel-branch and synchronization state independently from tasks using **Flow Tokens** and Sequence Flow traversal history.
 6. Make retries explicit through **Task Attempts**; a retry is not a new logical task.
-7. Make waits explicit through **Timer Subscriptions** and **Event Subscriptions**.
+7. Make waits explicit through **Timer Subscriptions** and **Message Subscriptions**.
 8. Treat process variables/context as scoped runtime data, not a single opaque instance blob.
 9. Separate execution history from security/administrative audit history.
 10. Keep notification state separate from task completion state.
@@ -175,8 +173,8 @@ erDiagram
     FLOW_NODE_INSTANCE o|--o{ CONTEXT_VARIABLE : scopes
 
     FLOW_NODE_INSTANCE ||--o{ TIMER_SUBSCRIPTION : waits_on
-    FLOW_NODE_INSTANCE ||--o{ EVENT_SUBSCRIPTION : waits_on
-    EVENT_SUBSCRIPTION o|--o| INBOUND_EVENT : consumes
+    FLOW_NODE_INSTANCE ||--o{ MESSAGE_SUBSCRIPTION : waits_on
+    MESSAGE_SUBSCRIPTION o|--o| INBOUND_MESSAGE : consumes
 
     PROCESS_INSTANCE ||--o{ EXECUTION_EVENT : history
     FLOW_NODE_INSTANCE o|--o{ EXECUTION_EVENT : concerns
@@ -645,7 +643,7 @@ erDiagram
       uuid node_def_id PK_FK
       enum catch_event_kind "TIMER|MESSAGE|CONDITIONAL"
       string timer_expression
-      string event_name_expression
+      string message_name_expression
       string correlation_key_expression
     }
 
@@ -878,20 +876,20 @@ erDiagram
       timestamp created_at
     }
 
-    EVENT_SUBSCRIPTION {
-      uuid event_subscription_id PK
+    MESSAGE_SUBSCRIPTION {
+      uuid message_subscription_id PK
       uuid flow_node_instance_id FK
-      string event_name
+      string message_name
       string correlation_key
       enum status "OPEN|CONSUMED|CANCELLED|EXPIRED"
       timestamp opened_at
       timestamp expires_at
     }
 
-    INBOUND_EVENT {
-      uuid inbound_event_id PK
+    INBOUND_MESSAGE {
+      uuid inbound_message_id PK
       string external_message_id
-      string event_name
+      string message_name
       string correlation_key
       json payload
       timestamp received_at
@@ -1109,7 +1107,7 @@ An implementation may physically persist context as JSON snapshots/event deltas 
 
 ### 3.10 Intermediate Catch Events require durable subscriptions
 
-`TIMER_SUBSCRIPTION` and `EVENT_SUBSCRIPTION` are runtime state. A waiting node must remain discoverable and recoverable after process/server restart. `INBOUND_EVENT` provides message identity, correlation, TTL/deduplication, and correlation outcome.
+`TIMER_SUBSCRIPTION` and `MESSAGE_SUBSCRIPTION` are runtime state. A waiting node must remain discoverable and recoverable after process/server restart. `INBOUND_MESSAGE` provides message identity, correlation, TTL/deduplication, and correlation outcome.
 
 Exact event buffering and correlation semantics remain a SPEC.md product decision.
 
@@ -1173,7 +1171,7 @@ This section is an informative cross-reference. It summarizes logical integrity 
 | 9 | Assignment history survives claim/release/reassignment, and actor-driven completion retains the completing actor. | `HUM-004`, `HUM-009` |
 | 10 | Task Attempt numbering is unique/strictly increasing within one Service Task Instance. | `INV-007` |
 | 11 | Execution Events form an ordered, append-only history per Process Instance; a physical unique sequence key is one valid implementation realization. | `EXEC-018` |
-| 12 | One Event Subscription is consumed at most once under the specified single-consumer semantics. | `INV-008` |
+| 12 | One Message Subscription is consumed at most once under the specified single-consumer semantics. | `INV-008` |
 | 13 | A non-human Notification Center entry is addressed to one resolved Non-Human Actor per required recipient. | `NOT-005` |
 | 14 | Email delivery state is separate from User Task completion state. | `INV-005`, `NOT-004`, `HUM-011` |
 | 15 | Notification acknowledgement is separate from Task completion state. | `INV-005`, `NOT-007` |
@@ -1329,3 +1327,35 @@ They can be added later if the product chooses them.
 - `ORGANIZATION_UNIT` and `ACTOR_ORG_MEMBERSHIP` are optional; an actor may belong to zero or many units.
 - Organization hierarchy and membership may be internally managed or externally mastered by an Actor Source.
 - Organization selectors in grants/access rules/assignment policies support `SELF_ONLY` and `SELF_AND_DESCENDANTS`; they narrow access and never create platform authority or tenant isolation.
+
+
+## 8. Reference Implementation Mapping (informative)
+
+The reference implementation (`src/db/schema.ts`) maps this logical model to PostgreSQL as follows. This section is an
+implementation companion only; it adds no behavioural, cardinality or integrity requirement.
+
+| Logical entity | Physical representation |
+|---|---|
+| PLATFORM_PRINCIPAL, API_KEY_CREDENTIAL | `platform_principals`, `api_keys` (SHA-256 verifier; `restrictions` jsonb) |
+| PROCESS_ACTOR, ACTOR_SOURCE, ACTOR_CREDENTIAL | `actors`, `actor_sources`, `actor_credentials`; unique `(actor_source_id, external_subject_id)` |
+| AUTHORIZATION_GRANT, ACTOR_GRANT | one table `authorization_grants` (`subject_type` PRINCIPAL/API_KEY/ACTOR/ACTOR_CREDENTIAL, `effect`, `scope` jsonb incl. `org` selector) |
+| PROCESS_ACCESS_PROFILE (+ASSOC, +RULE) | `process_access_profiles` (rules jsonb), `process_access_profile_assocs` |
+| ORGANIZATION_UNIT, ACTOR_ORG_MEMBERSHIP | `organization_units` (self-referencing parent), `actor_org_memberships` |
+| CONSUMPTION_LIMIT_POLICY, HARD_WINDOW_LIMIT, POLICY_CREDIT_BUCKET | `consumption_limit_policies` (window columns + `bucket_ids`), `consumption_policy_assocs` |
+| CREDIT_BUCKET_DEFINITION/COST/INSTANCE/LEDGER_ENTRY | `credit_bucket_definitions` (costs jsonb), `credit_bucket_instances`, `credit_ledger`; exact sliding-window log in `consumption_log` |
+| PROCESS, PROCESS_DRAFT, BPMN_DOCUMENT_ARTIFACT | `processes`, `process_drafts` (canonical BPMN XML), `process_versions` (immutable XML + compiled snapshot; trigger forbids UPDATE/DELETE) |
+| FLOW_NODE_DEFINITION, SEQUENCE_FLOW_DEFINITION, DATA_MAPPING, FORM_SCHEMA, ASSIGNMENT_POLICY, USER/SERVICE_TASK_CONFIG, RETRY/TIMEOUT_POLICY, CATCH_EVENT_CONFIG, CALL_ACTIVITY_CONFIG, LOOP_GUARD_DEFINITION | not separate tables: the *effective, immutable* definition is the `compiled` jsonb of the Process Version (`nodes`, `flows`, `regions`) |
+| ENTRY_POINT, INITIATOR_ATTRIBUTION | `entry_points`; initiator is an immutable jsonb on `process_instances` |
+| PROCESS_INSTANCE, EXECUTION_SEGMENT, LOOP_GUARD_STATE, ADMINISTRATIVE_PAUSE | `process_instances` (+`pause` jsonb sources), `execution_segments`, `loop_guard_state` |
+| FLOW_TOKEN, FLOW_NODE_INSTANCE, SEQUENCE_FLOW_INSTANCE | `flow_tokens` (`ready|waiting|consumed|cancelled`), `flow_node_instances` (unique `(instance, node, activation_seq)`), `sequence_flow_instances` |
+| CONTEXT_VARIABLE | `process_instances.context` (root) and `flow_node_instances.local_vars` (Flow Node-local) — jsonb, not rows; every change is an `execution_events` fact |
+| TASK_INSTANCE, TASK_ASSIGNMENT, TASK_ATTEMPT, USER_TASK_SUBMISSION | `tasks` (unique `fni_id` ⇒ INV-003), `task_assignments`, `task_attempts` (unique `(task_id, attempt_no)` ⇒ INV-007), `user_task_submissions` |
+| TIMER_SUBSCRIPTION, MESSAGE_SUBSCRIPTION, INBOUND_MESSAGE | `timer_subscriptions`, `message_subscriptions`, `inbound_messages` (partial unique `external_message_id`) |
+| EXECUTION_EVENT, AUDIT_EVENT | `execution_events` (unique `(instance, seq)`), `audit_events`; both guarded by append-only triggers |
+| INCIDENT | `incidents` |
+| TASK_NOTIFICATION, EMAIL_NOTIFICATION, EMAIL_DELIVERY_ATTEMPT, MACHINE_NOTIFICATION | `email_notifications`, `email_delivery_attempts`, `machine_notifications` (unique `(task, actor, type)`) |
+| ADMIN_INTERVENTION, OPERATIONAL_FINDING | `admin_interventions`; findings are derived on demand (not persisted) |
+| BULK_OPERATION, BULK_OPERATION_TARGET_RESULT | `bulk_previews` (frozen target set), `bulk_operations`, `bulk_operation_results` |
+| EXTERNAL_INTEGRATION, OUTBOUND_CREDENTIAL_REF | `external_integrations` (`credential_ref` = name of a protected secret; plaintext never stored) |
+| IDEMPOTENCY_RECORD | `idempotency_records` (PK `(scope_key, operation, idem_key)`) |
+| BPMN_PARTICIPANT / LANE / MESSAGE_FLOW | preserved inside the Draft/Version BPMN document and parsed on demand |
