@@ -26,7 +26,7 @@ This directory is part of [`SPECmd-app/spec-md-examples`](https://github.com/SPE
 ## Files in this example
 
 ```text
-karesansui-zen-garden/
+karesansui-japanese-garden-game/
 ├── README.md
 ├── SPEC.md
 └── TRACE.md
